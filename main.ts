@@ -2,6 +2,8 @@ const START_DISPLAY = "Hello, \
               I'm a Crash Sensor!!!";
 const CRASH_DISPLAY = "Crash Sensor Impact!!";
 OLED.init(128, 95);
+radio.setGroup(1);
+
 screenDisplay(null, START_DISPLAY);
 tinkercademy.crashSensorSetup(DigitalPin.P8);
 
@@ -17,10 +19,10 @@ function screenDisplay(default_display = START_DISPLAY, current_display: string)
     }
     else if (default_display != current_display) {
         if (default_display == START_DISPLAY) {
-            return
+            return;
         }
         else {
-            OLED.clear()
+            OLED.clear();
             OLED.writeString(current_display);
         }
     }
@@ -32,9 +34,9 @@ function screenDisplay(default_display = START_DISPLAY, current_display: string)
 function sensorControl(): boolean {
     let ret = false
     if (tinkercademy.crashSensor()) {
-        screenDisplay(null, CRASH_DISPLAY)
+        screenDisplay(null, CRASH_DISPLAY);
         sendRadioSignal(true);
-        ret = true
+        ret = true;
     }
     return ret
 }
@@ -43,16 +45,15 @@ function sendRadioSignal(signal: boolean): void {
     if (signal) {
         radio.sendString("HELP!!!");
     }
-    return
 }
 
 function recieveRadioSignal(current_status: string): boolean {
-    let ret = false
+    let ret = false;
     radio.onReceivedString(function (receivedString: string) {
-        ret = true
+        ret = true;
         screenDisplay(current_status, receivedString);
     })
-    return ret
+    return ret;
 }
 
 basic.forever(function () {
@@ -64,8 +65,8 @@ basic.forever(function () {
         while (message_recieved == false) {
             message_recieved = recieveRadioSignal(CRASH_DISPLAY);
 
-            basic.pause(100)
-            sendRadioSignal(!message_recieved)
+            basic.pause(100);
+            sendRadioSignal(!message_recieved);
         }
     }
 
