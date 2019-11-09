@@ -1,34 +1,66 @@
-OLED.init(128, 95);
-tinkercademy.crashSensorSetup(DigitalPin.P8)
-function sensorControl() {
-    let display = "Hello, \
+const START_DISPLAY = "Hello, \
               I'm a Crash Sensor!!!";
+screenDisplay(START_DISPLAY);
+tinkercademy.crashSensorSetup(DigitalPin.P8);
 
-    if (tinkercademy.crashSensor()) {
-        display = "Crash Sensor Impact!!";
+/**
+ * Function that controls the message that the OLED is displaying.
+ * Default is set to the START_MESSAGE constant.
+ * If the message changes the screen is cleared before displaying the message.
+ * Parameters: String message
+ */
+function screenDisplay(display: string): void {
+    OLED.init(128, 95);
+    if (display != START_DISPLAY) {
+        OLED.clear();
     }
-    return display;
+    OLED.writeString(display);
 }
 
-function radioSignal(screen_message: string): void {
-    if (screen_message == "Crash Sensor Impact!!") {
+/**
+ * 
+ */
+function sensorControl(): string {
+    let display = START_DISPLAY;
+    if (tinkercademy.crashSensor()) {
+        display = "Crash Sensor Impact!!"
+        sendRadioSignal(true);
+    }
+    return display
+}
+
+function sendRadioSignal(signal: boolean): void {
+    if (signal) {
         radio.sendString("HELP!!!");
     }
+    return
 }
 
-function recieveRadioSignal(message_recieved: string): boolean {
-    let ret = false;
-    if (message_recieved == null) {
-
-    }
-    return ret;
+function recieveRadioSignal(): boolean {
+    let ret = false
+    radio.onReceivedString(function (receivedString: string) {
+        ret = true
+        screenDisplay(receivedString);
+    })
+    return ret
 }
 
 basic.forever(function () {
-    OLED.clear();
+    // initialize the sensorControl
     let screen_message = sensorControl();
-    radioSignal(screen_message)
-    OLED.writeStringNewLine(screen_message);
-    basic.pause(2000);
-    OLED.clear();
+    screenDisplay(screen_message);
+
+    if (screen_message == "Crash Sensor Impact!!") {
+        let message_recieved = false;
+        while (message_recieved == false) {
+            message_recieved = recieveRadioSignal();
+
+            basic.pause(100)
+            sendRadioSignal(!message_recieved)
+        }
+    }
+    
+    input.onButtonPressed(Button.AB, function () {
+        screenDisplay(START_DISPLAY);
+    })
 })
