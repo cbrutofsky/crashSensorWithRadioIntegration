@@ -1,6 +1,8 @@
 const START_DISPLAY = "Hello, \
               I'm a Crash Sensor!!!";
-screenDisplay(START_DISPLAY);
+const CRASH_DISPLAY = "Crash Sensor Impact!!";
+OLED.init(128, 95);
+screenDisplay(null, START_DISPLAY);
 tinkercademy.crashSensorSetup(DigitalPin.P8);
 
 /**
@@ -9,24 +11,32 @@ tinkercademy.crashSensorSetup(DigitalPin.P8);
  * If the message changes the screen is cleared before displaying the message.
  * Parameters: String message
  */
-function screenDisplay(display: string): void {
-    OLED.init(128, 95);
-    if (display != START_DISPLAY) {
-        OLED.clear();
+function screenDisplay(default_display = START_DISPLAY, current_display: string): void {
+    if (current_display == default_display) {
+        OLED.writeString(current_display);
     }
-    OLED.writeString(display);
+    else if (default_display != current_display) {
+        if (default_display == START_DISPLAY) {
+            return
+        }
+        else {
+            OLED.clear()
+            OLED.writeString(current_display);
+        }
+    }
 }
 
 /**
  * 
  */
-function sensorControl(): string {
-    let display = START_DISPLAY;
+function sensorControl(): boolean {
+    let ret = false
     if (tinkercademy.crashSensor()) {
-        display = "Crash Sensor Impact!!"
+        screenDisplay(null, CRASH_DISPLAY)
         sendRadioSignal(true);
+        ret = true
     }
-    return display
+    return ret
 }
 
 function sendRadioSignal(signal: boolean): void {
@@ -36,31 +46,30 @@ function sendRadioSignal(signal: boolean): void {
     return
 }
 
-function recieveRadioSignal(): boolean {
+function recieveRadioSignal(current_status: string): boolean {
     let ret = false
     radio.onReceivedString(function (receivedString: string) {
         ret = true
-        screenDisplay(receivedString);
+        screenDisplay(current_status, receivedString);
     })
     return ret
 }
 
 basic.forever(function () {
     // initialize the sensorControl
-    let screen_message = sensorControl();
-    screenDisplay(screen_message);
+    let sensor_control = sensorControl();
 
-    if (screen_message == "Crash Sensor Impact!!") {
+    if (sensor_control) {
         let message_recieved = false;
         while (message_recieved == false) {
-            message_recieved = recieveRadioSignal();
+            message_recieved = recieveRadioSignal(CRASH_DISPLAY);
 
             basic.pause(100)
             sendRadioSignal(!message_recieved)
         }
     }
-    
+
     input.onButtonPressed(Button.AB, function () {
-        screenDisplay(START_DISPLAY);
+        screenDisplay(null, START_DISPLAY);
     })
 })
