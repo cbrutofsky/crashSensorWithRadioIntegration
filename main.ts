@@ -59,14 +59,17 @@ function recieveRadioSignal(current_status: string): boolean {
 basic.forever(function () {
     // initialize the sensorControl
     let sensor_control = sensorControl();
-
+    let message_recieved = false;
     if (sensor_control) {
-        let message_recieved = false;
         while (message_recieved == false) {
-            message_recieved = recieveRadioSignal(CRASH_DISPLAY);
-
-            basic.pause(100);
-            sendRadioSignal(!message_recieved);
+            if (recieveRadioSignal(CRASH_DISPLAY)){
+                break;
+            }
+            else
+            {
+                basic.pause(100);
+                sendRadioSignal(!message_recieved);
+            }  
         }
     }
 
