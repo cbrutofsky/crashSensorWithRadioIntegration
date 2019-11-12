@@ -17,7 +17,7 @@ function screenDisplay(default_display = START_DISPLAY, current_display: string)
     if (current_display == default_display) {
         OLED.writeString(current_display);
     }
-    else if (default_display != current_display) {
+    else {
         if (default_display == START_DISPLAY) {
             return;
         }
@@ -35,23 +35,32 @@ function sensorControl(): boolean {
     let ret = false
     if (tinkercademy.crashSensor()) {
         screenDisplay(null, CRASH_DISPLAY);
-        sendRadioSignal(true);
-        ret = true;
+        ret = sendRadioSignal(true);
     }
     return ret
 }
 
-function sendRadioSignal(signal: boolean): void {
+function sendRadioSignal(signal: boolean): boolean {
+    let ret = false;
     if (signal) {
         radio.sendString("HELP!!!");
+        let display = CRASH_DISPLAY + "\Calling for Help!!"
+        screenDisplay(CRASH_DISPLAY, display)
+        ret = true;
     }
+    return ret;
 }
 
 function recieveRadioSignal(current_status: string): boolean {
     let ret = false;
     radio.onReceivedString(function (receivedString: string) {
-        ret = true;
-        screenDisplay(current_status, receivedString);
+        if (receivedString != null) {
+            screenDisplay(current_status, "On our way!!!");
+            ret = true;
+        }
+        else {
+            screenDisplay(current_status, "Calling for Help!!");
+        }
     })
     return ret;
 }
@@ -59,19 +68,21 @@ function recieveRadioSignal(current_status: string): boolean {
 basic.forever(function () {
     // initialize the sensorControl
     let sensor_control = sensorControl();
-    let message_recieved = false;
-    if (sensor_control) {
-        while (message_recieved == false) {
-            if (recieveRadioSignal(CRASH_DISPLAY)){
-                break;
-            }
-            else
-            {
-                basic.pause(100);
-                sendRadioSignal(!message_recieved);
-            }  
-        }
+    //let message_recieved = false;
+    let message_recieved = recieveRadioSignal(CRASH_DISPLAY)
+
+    if (message_recieved == false && sensor_control == true) {
+        sendRadioSignal(true);
     }
+    // if (sensor_control == true) {
+    //     if (message_recieved == false) {
+    //         basic.pause(1000)
+    //         sendRadioSignal(false)
+    //     }
+    //     else {
+    //         sensor_control = false;
+    //     }
+    // }
 
     input.onButtonPressed(Button.AB, function () {
         screenDisplay(null, START_DISPLAY);
